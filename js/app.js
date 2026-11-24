@@ -46,7 +46,7 @@
   // ---------------------------------------------------------------- Efeitos sonoros (gerados no browser, sem ficheiros)
   const SFX = (() => {
     let ctx = null, armed = false, muted = rd("oas_mute") === "1";
-    ["pointerdown", "keydown", "touchstart"].forEach(ev => window.addEventListener(ev, () => { armed = true; }, { capture: true, passive: true }));
+    ["pointerdown", "pointerup", "touchend", "click", "keydown"].forEach(ev => window.addEventListener(ev, () => { armed = true; ac(); }, { capture: true, passive: true }));
     // ---- Música de fundo: loop "noir / investigação" (Em · Em · C · B7), gerado em tempo real
     const M = (() => {
       const LEVEL = 2.4, STEP = 60 / 84 / 2;          // 84 bpm, colcheias · LEVEL = volume geral da música (baixo, para não tapar os efeitos)
