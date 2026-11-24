@@ -47,10 +47,99 @@
   const SFX = (() => {
     let ctx = null, armed = false, muted = rd("oas_mute") === "1";
     ["pointerdown", "keydown", "touchstart"].forEach(ev => window.addEventListener(ev, () => { armed = true; }, { capture: true, passive: true }));
+    // ---- Música de fundo: loop "noir / investigação" (Em · Em · C · B7), gerado em tempo real
+    const M = (() => {
+      const LEVEL = .5, STEP = 60 / 84 / 2;           // 84 bpm, colcheias · LEVEL = volume geral da música (baixo, para não tapar os efeitos)
+      const E2 = 82.41, G2 = 98, A2 = 110, B2 = 123.47, C3 = 130.81, D3 = 146.83, Ds3 = 155.56, E3 = 164.81, Fs3 = 185;
+      const BASS = [[E2,0,0,E2,0,G2,0,B2], [E2,0,0,E2,0,D3,0,B2], [C3,0,0,C3,0,G2,0,A2], [B2,0,0,B2,0,Ds3,0,Fs3]];
+      const PAD  = [[E3,196,246.94], [E3,196,246.94], [C3,E3,196], [B2,Ds3,Fs3,220]];
+      const BELL = { "1:6": 493.88, "1:7": 659.25, "3:3": 622.25, "3:5": 739.99 };   // motivo esparso (sino)
+      let nodes = null, noise = null, timer = null, on = false, step = 0, next = 0, cycle = 0;
+
+      function build(c) {
+        const master = c.createGain(); master.gain.value = .0001; master.connect(c.destination);
+        const dry = c.createGain(); dry.connect(master);
+        const echo = c.createDelay(1); echo.delayTime.value = STEP * 3;
+        const fb = c.createGain(); fb.gain.value = .34;
+        const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1700;
+        const wet = c.createGain(); wet.gain.value = .5;
+        echo.connect(lp); lp.connect(fb); fb.connect(echo); lp.connect(wet); wet.connect(master);
+        noise = c.createBuffer(1, Math.floor(c.sampleRate * .2), c.sampleRate);
+        const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        nodes = { c, master, dry, echo };
+      }
+      function env(c, g, t, a, peak, hold, rel) {
+        g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a);
+        g.gain.exponentialRampToValueAtTime(Math.max(.0002, peak * hold), t + a + rel * .35);
+        g.gain.exponentialRampToValueAtTime(.0001, t + a + rel);
+      }
+      function bass(c, f, t) {
+        const o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain();
+        o.type = "sawtooth"; o.frequency.value = f; fl.type = "lowpass"; fl.frequency.value = 560; fl.Q.value = 2;
+        env(c, g, t, .012, .05, .45, STEP * 1.5);
+        o.connect(fl); fl.connect(g); g.connect(nodes.dry); o.start(t); o.stop(t + STEP * 1.7 + .05);
+      }
+      function pad(c, freqs, t) {
+        const dur = STEP * 8;
+        freqs.forEach(f => [-7, 7].forEach(det => {
+          const o = c.createOscillator(), fl = c.createBiquadFilter(), g = c.createGain();
+          o.type = "triangle"; o.frequency.value = f; o.detune.value = det; fl.type = "lowpass"; fl.frequency.value = 900;
+          g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.008, t + dur * .45); g.gain.linearRampToValueAtTime(.0001, t + dur + .5);
+          o.connect(fl); fl.connect(g); g.connect(nodes.dry); o.start(t); o.stop(t + dur + .6);
+        }));
+      }
+      function bell(c, f, t) {
+        [[1, .034], [2, .008]].forEach(([m, v]) => {
+          const o = c.createOscillator(), g = c.createGain();
+          o.type = "sine"; o.frequency.value = f * m; env(c, g, t, .006, v, .3, 1.3);
+          o.connect(g); g.connect(nodes.dry); g.connect(nodes.echo); o.start(t); o.stop(t + 1.5);
+        });
+      }
+      function hit(c, t, hp, freq, dur, vol) {
+        const src = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+        src.buffer = noise; fl.type = hp ? "highpass" : "bandpass"; fl.frequency.value = freq; fl.Q.value = 1.2;
+        env(c, g, t, .002, vol, .2, dur); src.connect(fl); fl.connect(g); g.connect(nodes.dry); src.start(t); src.stop(t + dur + .05);
+      }
+      function play(c, st, t) {
+        const bar = st >> 3, s = st & 7, f = BASS[bar][s];
+        if (s === 0) pad(c, PAD[bar], t);
+        if (f) bass(c, f, t);
+        const b = BELL[bar + ":" + s]; if (b) bell(c, b, t);
+        if (cycle % 2 === 1 && bar === 0 && s === 5) bell(c, 392, t);          // variação a cada 2 voltas
+        if (s & 1) hit(c, t, true, 7000, .03, .007);                           // hi-hat nas contratempos
+        if (s === 2 || s === 6) hit(c, t, false, 1500, .05, .016);             // "rim" nos tempos 2 e 4
+      }
+      function sched() {
+        const c = nodes.c; if (c.state !== "running") return;
+        if (next < c.currentTime - .1) next = c.currentTime + .05;
+        while (next < c.currentTime + .4) { play(c, step, next); next += STEP; if (++step === 32) { step = 0; cycle++; } }
+      }
+      return {
+        start(c) {
+          if (on) return;
+          if (!nodes || nodes.c !== c) build(c);
+          on = true; step = 0; cycle = 0; next = c.currentTime + .15;
+          const g = nodes.master.gain, t = c.currentTime;
+          g.cancelScheduledValues(t); g.setValueAtTime(.0001, t); g.exponentialRampToValueAtTime(LEVEL, t + 3);   // entra devagar
+          timer = setInterval(sched, 100);
+        },
+        stop() {
+          if (!on) return; on = false; clearInterval(timer);
+          const g = nodes.master.gain, t = nodes.c.currentTime;
+          g.cancelScheduledValues(t); g.setValueAtTime(Math.max(.0001, g.value), t); g.exponentialRampToValueAtTime(.0001, t + .4);
+        },
+        duck(sec) {                                    // baixa a música por momentos (desbloqueio, revelação)
+          if (!on) return; const g = nodes.master.gain, t = nodes.c.currentTime;
+          g.cancelScheduledValues(t); g.setValueAtTime(Math.max(.0001, g.value), t);
+          g.linearRampToValueAtTime(LEVEL * .2, t + .15); g.setValueAtTime(LEVEL * .2, t + sec); g.linearRampToValueAtTime(LEVEL, t + sec + 1.2);
+        }
+      };
+    })();
     const ac = () => {
       if (muted || !armed) return null;
       if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
-      try { if (ctx.state === "suspended") ctx.resume(); } catch (e) {}
+      try { if (ctx.state === "suspended" && !document.hidden) ctx.resume(); } catch (e) {}
+      M.start(ctx);
       return ctx;
     };
     function tone(f, at, dur, type, vol, f2) {
@@ -66,7 +155,7 @@
     const seq = (notes, step, type, vol) => notes.forEach((f, i) => tone(f, i * step, step * 1.7, type, vol));
     const api = {
       isMuted: () => muted,
-      toggle() { muted = !muted; wr("oas_mute", muted ? "1" : "0"); if (!muted) api.click(); return muted; },
+      toggle() { muted = !muted; wr("oas_mute", muted ? "1" : "0"); if (muted) M.stop(); else api.click(); return muted; },
       click: () => tone(520, 0, .05, "square", .022),
       tick: () => tone(1900, 0, .016, "square", .01),
       blip: () => tone(380 + Math.random() * 700, 0, .05, "square", .022),
@@ -74,9 +163,14 @@
       ok: () => seq([523, 659, 784, 1047], .09, "triangle", .09),
       bad: () => { tone(190, 0, .18, "sawtooth", .06, 110); tone(150, .13, .24, "sawtooth", .055, 90); },
       stamp: () => { tone(120, 0, .18, "sine", .16, 45); tone(1300, 0, .03, "square", .025); },
-      unlock: () => { seq([392, 523, 659, 784], .11, "triangle", .1); setTimeout(api.stamp, 480); },
-      reveal: () => seq([523, 659, 784, 1047, 1319, 1568], .12, "triangle", .1)
+      unlock: () => { M.duck(1.8); seq([392, 523, 659, 784], .11, "triangle", .1); setTimeout(api.stamp, 480); },
+      reveal: () => { M.duck(2.6); seq([523, 659, 784, 1047, 1319, 1568], .12, "triangle", .1); }
     };
+    // pausa a música (e o relógio de áudio) quando o separador/app vai para segundo plano
+    document.addEventListener("visibilitychange", () => {
+      if (!ctx) return;
+      try { if (document.hidden) ctx.suspend(); else if (!muted) ctx.resume(); } catch (e) {}
+    });
     return api;
   })();
   const sndBtn = $("#snd");
