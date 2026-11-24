@@ -1,0 +1,8 @@
+FOTOGRAFIA EM BEBÉ (Pista 6)
+
+Coloca aqui o ficheiro com o nome:   bebe.jpg
+(também são aceites: bebe.jpeg, bebe.png, bebe.webp)
+
+Dicas: formato vertical (4:5) fica melhor; idealmente com menos de 500 KB.
+Não precisas de mexer em mais nada: a app encontra a imagem sozinha.
+Podes apagar este ficheiro de texto depois.
