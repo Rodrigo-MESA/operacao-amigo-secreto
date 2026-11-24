@@ -49,7 +49,7 @@
     ["pointerdown", "keydown", "touchstart"].forEach(ev => window.addEventListener(ev, () => { armed = true; }, { capture: true, passive: true }));
     // ---- Música de fundo: loop "noir / investigação" (Em · Em · C · B7), gerado em tempo real
     const M = (() => {
-      const LEVEL = .5, STEP = 60 / 84 / 2;           // 84 bpm, colcheias · LEVEL = volume geral da música (baixo, para não tapar os efeitos)
+      const LEVEL = 2.4, STEP = 60 / 84 / 2;          // 84 bpm, colcheias · LEVEL = volume geral da música (baixo, para não tapar os efeitos)
       const E2 = 82.41, G2 = 98, A2 = 110, B2 = 123.47, C3 = 130.81, D3 = 146.83, Ds3 = 155.56, E3 = 164.81, Fs3 = 185;
       const BASS = [[E2,0,0,E2,0,G2,0,B2], [E2,0,0,E2,0,D3,0,B2], [C3,0,0,C3,0,G2,0,A2], [B2,0,0,B2,0,Ds3,0,Fs3]];
       const PAD  = [[E3,196,246.94], [E3,196,246.94], [C3,E3,196], [B2,Ds3,Fs3,220]];
