@@ -20,9 +20,9 @@ const CONFIG = {
   desafios: [
     { tipo: "cifra", titulo: "Prova 1 · Mensagem intercetada",
       intro: "Uma mensagem codificada foi intercetada no armazém. Cada letra foi deslocada 3 posições para a frente no alfabeto (Cifra de César).",
-      mensagemCodificada: "IXWVDO",
-      dica: "Dica: para decifrar, recua 3 letras. I → F.",
-      respostas: ["FUTSAL"], sucesso: "Mensagem decifrada. Acesso à prova seguinte." },
+      mensagemCodificada: "GHVSRUWR",
+      dica: "Dica: para decifrar, recua 3 letras. G → D.",
+      respostas: ["DESPORTO"], sucesso: "Mensagem decifrada. Acesso à prova seguinte." },
 
     { tipo: "documento", titulo: "Prova 2 · Documento confidencial",
       intro: "Este relatório foi censurado. Dizem que contém tinta invisível. Liga a luz UV e encontra o número-chave.",
@@ -33,17 +33,15 @@ const CONFIG = {
       respostas: ["18", "DEZOITO"], sucesso: "Documento validado. Tinta revelada." },
 
     { tipo: "lanterna", titulo: "Prova 3 · O escritório às escuras",
-      intro: "O embrulho foi deixado no escritório, no escuro. Quem lá esteve deixou doze marcas de giz escondidas, cada uma com um número. Apanha a lanterna e encontra-as todas.",
+      intro: "O embrulho foi deixado no escritório, no escuro. Quem lá esteve deixou seis marcas de giz escondidas, cada uma com um número. Apanha a lanterna e encontra-as todas.",
       ajuda: "Arrasta o dedo (ou o rato) para mover a lanterna. Toca quando uma marca aparecer para a apanhar.",
       // c = letra · n = ordem · x,y = posição no cenário (em %)
       letras: [
-        { c: "C", n: 1, x: 14, y: 22 }, { c: "O", n: 2, x: 62, y: 14 }, { c: "M", n: 3, x: 38, y: 48 },
-        { c: "P", n: 4, x: 86, y: 30 }, { c: "U", n: 5, x: 12, y: 60 }, { c: "T", n: 6, x: 64, y: 46 },
-        { c: "A", n: 7, x: 88, y: 66 }, { c: "D", n: 8, x: 36, y: 84 }, { c: "O", n: 9, x: 14, y: 88 },
-        { c: "R", n: 10, x: 60, y: 80 }, { c: "E", n: 11, x: 38, y: 20 }, { c: "S", n: 12, x: 84, y: 90 }
+        { c: "H", n: 1, x: 14, y: 22 }, { c: "A", n: 2, x: 62, y: 14 }, { c: "C", n: 3, x: 38, y: 48 },
+        { c: "K", n: 4, x: 86, y: 66 }, { c: "E", n: 5, x: 14, y: 88 }, { c: "R", n: 6, x: 60, y: 80 }
       ],
       pergunta: "Que palavra formam as marcas, pela ordem dos números?",
-      respostas: ["COMPUTADORES"],
+      respostas: ["HACKER"],
       sucesso: "Palavra correta. Foi mesmo no escritório que tudo começou. O arquivo do caso está agora desbloqueado." }
   ],
 
@@ -70,7 +68,7 @@ const CONFIG = {
     titulo: "FASE 2 · ÚLTIMAS PISTAS",
     intro: "Código aceite. O arquivo foi desbloqueado. Restam duas pistas antes de encerrar o processo.",
     pistas: [
-      { etiqueta: "PISTA 5 · FUTSAL", texto: "Dizem que para jogar é preciso marcar golos. Eu tenho outra opinião.",
+      { etiqueta: "PISTA 5 · DESPORTO", texto: "Dizem que para jogar é preciso marcar golos. Eu tenho outra opinião.",
         ligacao: "Recorda a palavra que decifraste na Prova 1.", visual: "baliza" },
       { etiqueta: "PISTA 6 · IDADE", texto: "Sou o mais novo daqui.",
         ligacao: "Recorda o número que encontraste na Prova 2.", visual: "foto" }
